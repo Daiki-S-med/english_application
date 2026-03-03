@@ -2,8 +2,6 @@ import streamlit as st
 import os
 import time
 from pathlib import Path
-import wave
-import pyaudio
 from pydub import AudioSegment
 from audiorecorder import audiorecorder
 import numpy as np
@@ -106,31 +104,11 @@ def play_wav(audio_output_file_path, speed=1.0):
         # 速度を変更した音声ファイルを上書き保存
         modified_audio.export(audio_output_file_path, format="wav")
 
-    # PyAudioで再生
-    # waveライブラリを使ってwavファイルを読み込み、PyAudioで再生する。
-    # これにより、速度を変更した音声ファイルを正しく再生できる。
-    with wave.open(audio_output_file_path, 'rb') as play_target_file:
-        p = pyaudio.PyAudio()
-        stream = p.open(
-            format=p.get_format_from_width(play_target_file.getsampwidth()),
-            channels=play_target_file.getnchannels(),
-            rate=play_target_file.getframerate(),
-            output=True
-        )
+    # ブラウザ上で音声を再生（Streamlit Cloudなどサーバー環境でも動作する）
+    with open(audio_output_file_path, 'rb') as audio_file:
+        audio_bytes = audio_file.read()
+    st.audio(audio_bytes, format='audio/wav', autoplay=True)
 
-        # 音声ファイルをチャンクごとに読み込んで再生する。
-        # これにより、大きなファイルでもメモリ効率よく再生できる。
-        data = play_target_file.readframes(1024)
-        while data:
-            stream.write(data)
-            data = play_target_file.readframes(1024)
-
-        # 再生が終わったらストリームを閉じる
-        # これを忘れると、次回以降の再生でエラーが発生する可能性がある。
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-    
     # LLMからの回答の音声ファイルを削除
     os.remove(audio_output_file_path)
 
